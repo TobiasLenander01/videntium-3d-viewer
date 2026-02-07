@@ -3,13 +3,14 @@ import {
   FiUpload, 
   FiFile, 
   FiX, 
-  FiInfo,
   FiChevronLeft,
   FiChevronRight,
-  FiRotateCw
+  FiRotateCw,
+  FiMove
 } from 'react-icons/fi';
 import type { SplatTransform } from './App';
-
+const ROTATION_STEP = 5; // degrees
+const POSITION_STEP = 0.2; // units
 interface SidebarProps {
   onFileLoad: (file: File) => void;
   isCollapsed: boolean;
@@ -21,17 +22,22 @@ interface SidebarProps {
 function Sidebar({ onFileLoad, isCollapsed, onToggleCollapse, transform, onTransformChange }: SidebarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const validateAndLoadFile = (file: File) => {
+    const extension = file.name.toLowerCase().split('.').pop();
+    if (extension === 'ply' || extension === 'splat' || extension === 'spz') {
+      setCurrentFile(file);
+      onFileLoad(file);
+    } else {
+      alert('Please select a valid .ply, .splat, or .spz file');
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const extension = file.name.toLowerCase().split('.').pop();
-      if (extension === 'ply' || extension === 'splat' || extension === 'spz') {
-        setCurrentFile(file);
-        onFileLoad(file);
-      } else {
-        alert('Please select a valid .ply, .splat, or .spz file');
-      }
+      validateAndLoadFile(file);
     }
   };
 
@@ -54,24 +60,43 @@ function Sidebar({ onFileLoad, isCollapsed, onToggleCollapse, transform, onTrans
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  const handleFlipX = () => {
-    onTransformChange({ ...transform, rotationX: transform.rotationX + Math.PI / 2 });
-  };
-
-  const handleFlipY = () => {
-    onTransformChange({ ...transform, rotationY: transform.rotationY + Math.PI / 2 });
-  };
-
-  const handleFlipZ = () => {
-    onTransformChange({ ...transform, rotationZ: transform.rotationZ + Math.PI / 2 });
-  };
-
-  const handleRotate90Y = () => {
-    onTransformChange({ ...transform, rotationY: transform.rotationY + Math.PI / 2 });
+  const handleRotationChange = (axis: 'X' | 'Y' | 'Z', degrees: number) => {
+    const radians = (degrees * Math.PI) / 180;
+    const key = `rotation${axis}` as keyof SplatTransform;
+    onTransformChange({ ...transform, [key]: radians });
   };
 
   const handleResetRotation = () => {
-    onTransformChange({ rotationX: 0, rotationY: 0, rotationZ: 0 });
+    onTransformChange({ ...transform, rotationX: 0, rotationY: 0, rotationZ: 0 });
+  };
+
+  const handlePositionChange = (axis: 'X' | 'Y' | 'Z', value: number) => {
+    const key = `position${axis}` as keyof SplatTransform;
+    onTransformChange({ ...transform, [key]: value });
+  };
+
+  const handleResetPosition = () => {
+    onTransformChange({ ...transform, positionX: 0, positionY: 0, positionZ: 0 });
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      validateAndLoadFile(file);
+    }
   };
 
   return (
@@ -91,32 +116,25 @@ function Sidebar({ onFileLoad, isCollapsed, onToggleCollapse, transform, onTrans
         <p className="text-sm text-gray-600">Gaussian Splatting Viewer</p>
       </div>
 
-      {/* File Actions */}
+      {/* Unified Import/File Zone */}
       <div className={`p-4 space-y-3 ${isCollapsed ? 'hidden' : ''}`}>
-        <button
+        <div
           onClick={handleImportClick}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors cursor-pointer shadow-sm"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`relative border-2 border-dashed rounded-lg p-6 transition-all cursor-pointer ${
+            isDragging
+              ? 'border-blue-500 bg-blue-50'
+              : currentFile
+              ? 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+              : 'border-gray-300 bg-white hover:border-blue-400 hover:bg-blue-50/50'
+          }`}
         >
-          <FiUpload className="text-lg" />
-          <span>Import Splat File</span>
-        </button>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".ply,.splat,.spz"
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-      </div>
-
-      {/* Current File Info */}
-      {currentFile && !isCollapsed && (
-        <div className="px-4 pb-4 space-y-3">
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <div className="flex items-start justify-between mb-3">
+          {currentFile ? (
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <FiFile className="text-blue-500 shrink-0" />
+                <FiFile className="text-blue-500 shrink-0 text-lg" />
                 <div className="flex-1 min-w-0">
                   <p className="text-gray-900 text-sm font-medium truncate" title={currentFile.name}>
                     {currentFile.name}
@@ -127,71 +145,117 @@ function Sidebar({ onFileLoad, isCollapsed, onToggleCollapse, transform, onTrans
                 </div>
               </div>
               <button
-                onClick={handleClearFile}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClearFile();
+                }}
                 className="text-gray-400 hover:text-gray-700 transition-colors shrink-0 ml-2 cursor-pointer"
                 title="Clear file"
               >
-                <FiX />
+                <FiX className="text-lg" />
               </button>
             </div>
-          </div>
+          ) : (
+            <div className="text-center">
+              <FiUpload className="mx-auto text-3xl text-gray-400 mb-3" />
+              <p className="text-sm font-medium text-gray-900 mb-1">
+                {isDragging ? 'Drop file here' : 'Import File'}
+              </p>
+              <p className="text-xs text-gray-500">
+                Click to browse or drag & drop
+              </p>
+              <p className="text-xs text-gray-400 mt-2">
+                .PLY • .SPLAT • .SPZ
+              </p>
+            </div>
+          )}
+        </div>
 
-          {/* Rotation Controls */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".ply,.splat,.spz"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+      </div>
+
+      {/* Rotation Controls */}
+      {currentFile && !isCollapsed && (
+        <div className="px-4 pb-4">
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <h3 className="text-gray-900 text-sm font-medium mb-3 flex items-center gap-2">
               <FiRotateCw className="text-blue-500" />
-              Orientation
+              Rotation
             </h3>
-            <div className="grid grid-cols-3 gap-2 mb-2">
-              <button
-                onClick={handleFlipX}
-                className="px-3 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded text-xs text-gray-700 transition-colors cursor-pointer"
-                title="Rotate 90° around X axis"
-              >
-                ↻ X 90°
-              </button>
-              <button
-                onClick={handleFlipY}
-                className="px-3 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded text-xs text-gray-700 transition-colors cursor-pointer"
-                title="Rotate 90° around Y axis"
-              >
-                ↻ Y 90°
-              </button>
-              <button
-                onClick={handleFlipZ}
-                className="px-3 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded text-xs text-gray-700 transition-colors cursor-pointer"
-                title="Rotate 90° around Z axis"
-              >
-                ↻ Z 90°
-              </button>
+            <div className="space-y-2">
+              {(['X', 'Y', 'Z'] as const).map((axis) => {
+                const key = `rotation${axis}` as keyof SplatTransform;
+                const radians = transform[key] as number;
+                const degrees = Math.round((radians * 180) / Math.PI);
+                return (
+                  <div key={axis} className="flex items-center gap-2">
+                    <span className="text-xs text-gray-600 w-4">{axis}</span>
+                    <input
+                      type="number"
+                      value={degrees}
+                      onChange={(e) => handleRotationChange(axis, parseFloat(e.target.value) || 0)}
+                      step={ROTATION_STEP}
+                      className="flex-1 px-2 py-1 text-xs bg-white border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      placeholder="0"
+                    />
+                  </div>
+                );
+              })}
             </div>
             <button
               onClick={handleResetRotation}
-              className="w-full px-3 py-2 bg-gray-200 hover:bg-gray-300 border border-gray-300 rounded text-xs text-gray-700 transition-colors cursor-pointer"
-              title="Reset to original orientation"
+              className="w-full px-3 py-2 bg-gray-200 hover:bg-gray-300 border border-gray-300 rounded text-xs text-gray-700 transition-colors cursor-pointer mt-3"
+              title="Reset to original rotation"
             >
-              Reset Orientation
+              Reset Rotation
+            </button>
+          </div>
+
+          {/* Position Controls */}
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mt-3">
+            <h3 className="text-gray-900 text-sm font-medium mb-3 flex items-center gap-2">
+              <FiMove className="text-blue-500" />
+              Position
+            </h3>
+            <div className="space-y-2">
+              {(['X', 'Y', 'Z'] as const).map((axis) => {
+                const key = `position${axis}` as keyof SplatTransform;
+                const value = transform[key] as number;
+                return (
+                  <div key={axis} className="flex items-center gap-2">
+                    <span className="text-xs text-gray-600 w-4">{axis}</span>
+                    <input
+                      type="number"
+                      value={value.toFixed(2)}
+                      onChange={(e) => handlePositionChange(axis, parseFloat(e.target.value) || 0)}
+                      step={POSITION_STEP}
+                      className="flex-1 px-2 py-1 text-xs bg-white border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      placeholder="0"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <button
+              onClick={handleResetPosition}
+              className="w-full px-3 py-2 bg-gray-200 hover:bg-gray-300 border border-gray-300 rounded text-xs text-gray-700 transition-colors cursor-pointer mt-3"
+              title="Reset to original position"
+            >
+              Reset Position
             </button>
           </div>
         </div>
       )}
 
       {/* Info Section */}
-      <div className={`mt-auto p-4 border-t border-gray-200 ${isCollapsed ? 'hidden' : ''}`}>
-        <div className="bg-gray-50/50 rounded-lg p-4">
-          <div className="flex items-start gap-2 mb-3">
-            <FiInfo className="text-blue-500 mt-0.5 shrink-0" />
-            <div>
-              <h3 className="text-gray-900 text-sm font-medium mb-1">Supported Formats</h3>
-              <ul className="text-gray-600 text-xs space-y-1">
-                <li>• .PLY (Gaussian Splatting)</li>
-                <li>• .SPLAT (Antimatter15)</li>
-                <li>• .SPZ (Compressed)</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="pt-3 border-t border-gray-200">
+      <div className={`mt-auto p-4 ${isCollapsed ? 'hidden' : ''}`}>
+        <div>
             <h3 className="text-gray-900 text-sm font-medium mb-2">Controls</h3>
             <ul className="text-gray-600 text-xs space-y-1">
               <li>• <span className="text-gray-800">Mouse Drag:</span> Rotate view</li>
@@ -200,7 +264,6 @@ function Sidebar({ onFileLoad, isCollapsed, onToggleCollapse, transform, onTrans
               <li>• <span className="text-gray-800">Q/E:</span> Move up/down</li>
             </ul>
           </div>
-        </div>
       </div>
 
       {/* Footer */}

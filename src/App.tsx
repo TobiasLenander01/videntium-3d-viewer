@@ -6,6 +6,9 @@ export interface SplatTransform {
   rotationX: number;
   rotationY: number;
   rotationZ: number;
+  positionX: number;
+  positionY: number;
+  positionZ: number;
 }
 
 function App() {
@@ -15,12 +18,15 @@ function App() {
     rotationX: 0,
     rotationY: 0,
     rotationZ: 0,
+    positionX: 0,
+    positionY: 0,
+    positionZ: 0,
   });
 
   const handleFileLoad = (file: File) => {
     setFileToLoad(file);
     // Reset transformations when loading new file
-    setSplatTransform({ rotationX: 0, rotationY: 0, rotationZ: 0 });
+    setSplatTransform({ rotationX: 0, rotationY: 0, rotationZ: 0, positionX: 0, positionY: 0, positionZ: 0 });
   };
 
   return (

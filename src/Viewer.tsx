@@ -270,6 +270,11 @@ function Viewer({ fileToLoad, transform }: ViewerProps) {
         transform.rotationY,
         transform.rotationZ
       );
+      splatMeshRef.current.position.set(
+        transform.positionX,
+        transform.positionY,
+        transform.positionZ
+      );
     }
   }, [transform]);
 
