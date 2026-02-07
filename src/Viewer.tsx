@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { SplatMesh } from '@sparkjsdev/spark';
+import type { SplatTransform } from './App';
 
 interface ViewerProps {
   fileToLoad: File | null;
+  transform: SplatTransform;
 }
 
-function Viewer({ fileToLoad }: ViewerProps) {
+function Viewer({ fileToLoad, transform }: ViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -16,10 +18,9 @@ function Viewer({ fileToLoad }: ViewerProps) {
 
   // Camera control state
   const cameraStateRef = useRef({
-    pitch: 0,
-    yaw: 0,
-    distance: 5,
-    target: new THREE.Vector3(0, 0, 0),
+    position: new THREE.Vector3(0, 3, 7),
+    pitch: -0.4,
+    yaw: Math.PI,
     isDragging: false,
     lastMouseX: 0,
     lastMouseY: 0,
@@ -33,7 +34,7 @@ function Viewer({ fileToLoad }: ViewerProps) {
 
     // Scene setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a1a);
+    scene.background = new THREE.Color(0xf2f2f2);
     sceneRef.current = scene;
 
     // Camera setup
@@ -43,7 +44,7 @@ function Viewer({ fileToLoad }: ViewerProps) {
       0.1,
       1000
     );
-    camera.position.set(0, 0, 5);
+    camera.position.set(0, 3, 7);
     cameraRef.current = camera;
 
     // Renderer setup
@@ -61,7 +62,7 @@ function Viewer({ fileToLoad }: ViewerProps) {
     scene.add(directionalLight);
 
     // Grid helper for reference
-    const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
+    const gridHelper = new THREE.GridHelper(10, 10, 0xcccccc, 0xe0e0e0);
     scene.add(gridHelper);
 
     // Handle window resize
@@ -102,8 +103,20 @@ function Viewer({ fileToLoad }: ViewerProps) {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      cameraStateRef.current.distance += e.deltaY * 0.01;
-      cameraStateRef.current.distance = Math.max(1, Math.min(50, cameraStateRef.current.distance));
+      const state = cameraStateRef.current;
+      
+      // Calculate forward direction
+      const forward = new THREE.Vector3(
+        Math.cos(state.pitch) * Math.sin(state.yaw),
+        Math.sin(state.pitch),
+        Math.cos(state.pitch) * Math.cos(state.yaw)
+      );
+      
+      // Move camera forward/backward
+      const zoomSpeed = e.deltaY * 0.01;
+      state.position.x += forward.x * zoomSpeed;
+      state.position.y += forward.y * zoomSpeed;
+      state.position.z += forward.z * zoomSpeed;
     };
 
     // Keyboard controls
@@ -131,22 +144,61 @@ function Viewer({ fileToLoad }: ViewerProps) {
 
       if (!camera || !renderer || !scene) return;
 
-      // Keyboard movement
+      // Calculate view direction from pitch and yaw
+      const forward = new THREE.Vector3(
+        Math.cos(state.pitch) * Math.sin(state.yaw),
+        Math.sin(state.pitch),
+        Math.cos(state.pitch) * Math.cos(state.yaw)
+      );
+
+      // Calculate right direction (perpendicular to forward, on horizontal plane)
+      const right = new THREE.Vector3();
+      right.crossVectors(forward, new THREE.Vector3(0, 1, 0));
+      right.normalize();
+
+      // Calculate up direction (perpendicular to both forward and right)
+      const up = new THREE.Vector3();
+      up.crossVectors(right, forward);
+      up.normalize();
+
+      // Keyboard movement - relative to camera direction
       const moveSpeed = 0.1;
-      if (state.keys['w']) state.target.z -= moveSpeed;
-      if (state.keys['s']) state.target.z += moveSpeed;
-      if (state.keys['a']) state.target.x -= moveSpeed;
-      if (state.keys['d']) state.target.x += moveSpeed;
-      if (state.keys['q']) state.target.y -= moveSpeed;
-      if (state.keys['e']) state.target.y += moveSpeed;
+      
+      // Apply movement
+      if (state.keys['w']) {
+        state.position.x += forward.x * moveSpeed;
+        state.position.y += forward.y * moveSpeed;
+        state.position.z += forward.z * moveSpeed;
+      }
+      if (state.keys['s']) {
+        state.position.x -= forward.x * moveSpeed;
+        state.position.y -= forward.y * moveSpeed;
+        state.position.z -= forward.z * moveSpeed;
+      }
+      if (state.keys['a']) {
+        state.position.x -= right.x * moveSpeed;
+        state.position.z -= right.z * moveSpeed;
+      }
+      if (state.keys['d']) {
+        state.position.x += right.x * moveSpeed;
+        state.position.z += right.z * moveSpeed;
+      }
+      if (state.keys['q']) {
+        state.position.x -= up.x * moveSpeed;
+        state.position.y -= up.y * moveSpeed;
+        state.position.z -= up.z * moveSpeed;
+      }
+      if (state.keys['e']) {
+        state.position.x += up.x * moveSpeed;
+        state.position.y += up.y * moveSpeed;
+        state.position.z += up.z * moveSpeed;
+      }
 
-      // Update camera position based on orbit controls
-      const x = state.target.x + state.distance * Math.cos(state.pitch) * Math.sin(state.yaw);
-      const y = state.target.y + state.distance * Math.sin(state.pitch);
-      const z = state.target.z + state.distance * Math.cos(state.pitch) * Math.cos(state.yaw);
-
-      camera.position.set(x, y, z);
-      camera.lookAt(state.target);
+      // Update camera position and look-at target
+      camera.position.copy(state.position);
+      const target = new THREE.Vector3();
+      target.addVectors(state.position, forward);
+      camera.lookAt(target);
 
       renderer.render(scene, camera);
     };
@@ -193,10 +245,9 @@ function Viewer({ fileToLoad }: ViewerProps) {
         splatMeshRef.current = splatMesh;
 
         // Reset camera
-        cameraStateRef.current.distance = 5;
-        cameraStateRef.current.pitch = 0;
-        cameraStateRef.current.yaw = 0;
-        cameraStateRef.current.target.set(0, 0, 0);
+        cameraStateRef.current.position.set(0, 3, 7);
+        cameraStateRef.current.pitch = -0.4;
+        cameraStateRef.current.yaw = Math.PI;
 
         // Clean up URL
         URL.revokeObjectURL(url);
@@ -211,21 +262,23 @@ function Viewer({ fileToLoad }: ViewerProps) {
     loadSplat();
   }, [fileToLoad]);
 
+  // Apply transformations to splat mesh
+  useEffect(() => {
+    if (splatMeshRef.current) {
+      splatMeshRef.current.rotation.set(
+        transform.rotationX,
+        transform.rotationY,
+        transform.rotationZ
+      );
+    }
+  }, [transform]);
+
   return (
     <div className="relative w-full h-full">
       <div ref={containerRef} className="w-full h-full" />
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-          <div className="text-white text-xl">Loading splat...</div>
-        </div>
-      )}
-      {!splatMeshRef.current && !isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-gray-400 text-center">
-            <p className="text-xl mb-2">No splat loaded</p>
-            <p className="text-sm">Import a .ply or .splat file to begin</p>
-            <p className="text-xs mt-4">Controls: Mouse drag to rotate, Scroll to zoom, WASD/QE to move</p>
-          </div>
+        <div className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+          <div className="text-gray-900 text-xl font-medium">Loading splat...</div>
         </div>
       )}
     </div>
