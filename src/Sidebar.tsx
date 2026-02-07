@@ -6,20 +6,25 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiRotateCw,
-  FiMove
+  FiMove,
+  FiGrid,
+  FiCamera
 } from 'react-icons/fi';
 import type { SplatTransform } from './App';
 const ROTATION_STEP = 5; // degrees
 const POSITION_STEP = 0.2; // units
 interface SidebarProps {
-  onFileLoad: (file: File) => void;
+  onFileLoad: (file: File | null) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   transform: SplatTransform;
   onTransformChange: (transform: SplatTransform) => void;
+  showGrid: boolean;
+  onToggleGrid: () => void;
+  onResetCamera: () => void;
 }
 
-function Sidebar({ onFileLoad, isCollapsed, onToggleCollapse, transform, onTransformChange }: SidebarProps) {
+function Sidebar({ onFileLoad, isCollapsed, onToggleCollapse, transform, onTransformChange, showGrid, onToggleGrid, onResetCamera }: SidebarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -47,6 +52,7 @@ function Sidebar({ onFileLoad, isCollapsed, onToggleCollapse, transform, onTrans
 
   const handleClearFile = () => {
     setCurrentFile(null);
+    onFileLoad(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -255,6 +261,30 @@ function Sidebar({ onFileLoad, isCollapsed, onToggleCollapse, transform, onTrans
 
       {/* Info Section */}
       <div className={`mt-auto p-4 ${isCollapsed ? 'hidden' : ''}`}>
+        {/* Reset Camera Button */}
+        <div className="mb-2">
+          <button
+            onClick={onResetCamera}
+            className="w-full px-3 py-2 bg-gray-200 hover:bg-gray-300 border border-gray-300 rounded text-xs text-gray-700 transition-colors cursor-pointer flex items-center justify-center gap-2"
+            title="Reset camera to default position"
+          >
+            <FiCamera />
+            Reset Camera
+          </button>
+        </div>
+        
+        {/* Grid Toggle */}
+        <div className="mb-4">
+          <button
+            onClick={onToggleGrid}
+            className="w-full px-3 py-2 bg-gray-200 hover:bg-gray-300 border border-gray-300 rounded text-xs text-gray-700 transition-colors cursor-pointer flex items-center justify-center gap-2"
+            title={showGrid ? 'Hide grid helper' : 'Show grid helper'}
+          >
+            <FiGrid />
+            {showGrid ? 'Hide Grid' : 'Show Grid'}
+          </button>
+        </div>
+        
         <div>
             <h3 className="text-gray-900 text-sm font-medium mb-2">Controls</h3>
             <ul className="text-gray-600 text-xs space-y-1">

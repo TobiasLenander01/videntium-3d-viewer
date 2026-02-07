@@ -6,14 +6,17 @@ import type { SplatTransform } from './App';
 interface ViewerProps {
   fileToLoad: File | null;
   transform: SplatTransform;
+  showGrid: boolean;
+  resetCameraTrigger: number;
 }
 
-function Viewer({ fileToLoad, transform }: ViewerProps) {
+function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger }: ViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const splatMeshRef = useRef<SplatMesh | null>(null);
+  const gridHelperRef = useRef<THREE.GridHelper | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Camera control state
@@ -64,6 +67,7 @@ function Viewer({ fileToLoad, transform }: ViewerProps) {
     // Grid helper for reference
     const gridHelper = new THREE.GridHelper(10, 10, 0xcccccc, 0xe0e0e0);
     scene.add(gridHelper);
+    gridHelperRef.current = gridHelper;
 
     // Handle window resize
     const handleResize = () => {
@@ -220,9 +224,34 @@ function Viewer({ fileToLoad, transform }: ViewerProps) {
     };
   }, []);
 
+  // Handle grid visibility
+  useEffect(() => {
+    if (gridHelperRef.current) {
+      gridHelperRef.current.visible = showGrid;
+    }
+  }, [showGrid]);
+
+  // Handle camera reset
+  useEffect(() => {
+    if (resetCameraTrigger > 0) {
+      cameraStateRef.current.position.set(0, 3, 7);
+      cameraStateRef.current.pitch = -0.4;
+      cameraStateRef.current.yaw = Math.PI;
+    }
+  }, [resetCameraTrigger]);
+
   // Handle file loading
   useEffect(() => {
-    if (!fileToLoad || !sceneRef.current) return;
+    if (!sceneRef.current) return;
+
+    // If no file, remove existing splat mesh
+    if (!fileToLoad) {
+      if (splatMeshRef.current) {
+        sceneRef.current.remove(splatMeshRef.current);
+        splatMeshRef.current = null;
+      }
+      return;
+    }
 
     const loadSplat = async () => {
       setIsLoading(true);
