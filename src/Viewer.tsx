@@ -179,7 +179,12 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
       up.normalize();
 
       // Keyboard movement - relative to camera direction
-      const moveSpeed = 0.1 * movementSensitivityRef.current;
+      let moveSpeed = 0.1 * movementSensitivityRef.current;
+      
+      // Apply shift boost
+      if (state.keys['shift']) {
+        moveSpeed *= 2;
+      }
       
       // Apply movement
       if (state.keys['w']) {

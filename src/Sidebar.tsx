@@ -278,6 +278,7 @@ function Sidebar({ onFileLoad, transform, onTransformChange, showGrid, onToggleG
               <li>• <span className="text-gray-800">Scroll:</span> Zoom in/out</li>
               <li>• <span className="text-gray-800">WASD:</span> Move horizontally</li>
               <li>• <span className="text-gray-800">Q/E:</span> Move up/down</li>
+              <li>• <span className="text-gray-800">Shift:</span> Speed boost (2x)</li>
             </ul>
           </div>
 
