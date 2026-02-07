@@ -8,4 +8,16 @@ export default defineConfig({
     react(),
     tailwindcss()
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'three': ['three'],
+          'spark': ['@sparkjsdev/spark'],
+          'react-vendor': ['react', 'react-dom'],
+          'icons': ['react-icons'],
+        }
+      }
+    }
+  }
 })
