@@ -8,16 +8,29 @@ interface ViewerProps {
   transform: SplatTransform;
   showGrid: boolean;
   resetCameraTrigger: number;
+  movementSensitivity: number;
+  rotationSensitivity: number;
 }
 
-function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger }: ViewerProps) {
+function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementSensitivity, rotationSensitivity }: ViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const splatMeshRef = useRef<SplatMesh | null>(null);
   const gridHelperRef = useRef<THREE.GridHelper | null>(null);
+  const movementSensitivityRef = useRef(movementSensitivity);
+  const rotationSensitivityRef = useRef(rotationSensitivity);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Update sensitivity refs when props change
+  useEffect(() => {
+    movementSensitivityRef.current = movementSensitivity;
+  }, [movementSensitivity]);
+
+  useEffect(() => {
+    rotationSensitivityRef.current = rotationSensitivity;
+  }, [rotationSensitivity]);
 
   // Camera control state
   const cameraStateRef = useRef({
@@ -93,8 +106,8 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger }: ViewerP
       const deltaX = e.clientX - cameraStateRef.current.lastMouseX;
       const deltaY = e.clientY - cameraStateRef.current.lastMouseY;
 
-      cameraStateRef.current.yaw -= deltaX * 0.005;
-      cameraStateRef.current.pitch -= deltaY * 0.005;
+      cameraStateRef.current.yaw -= deltaX * 0.005 * rotationSensitivityRef.current;
+      cameraStateRef.current.pitch -= deltaY * 0.005 * rotationSensitivityRef.current;
       cameraStateRef.current.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraStateRef.current.pitch));
 
       cameraStateRef.current.lastMouseX = e.clientX;
@@ -117,7 +130,7 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger }: ViewerP
       );
       
       // Move camera forward/backward
-      const zoomSpeed = e.deltaY * 0.01;
+      const zoomSpeed = e.deltaY * 0.01 * movementSensitivityRef.current;
       state.position.x += forward.x * zoomSpeed;
       state.position.y += forward.y * zoomSpeed;
       state.position.z += forward.z * zoomSpeed;
@@ -166,7 +179,7 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger }: ViewerP
       up.normalize();
 
       // Keyboard movement - relative to camera direction
-      const moveSpeed = 0.1;
+      const moveSpeed = 0.1 * movementSensitivityRef.current;
       
       // Apply movement
       if (state.keys['w']) {

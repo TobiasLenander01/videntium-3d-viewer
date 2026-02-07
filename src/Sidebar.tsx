@@ -3,8 +3,6 @@ import {
   FiUpload, 
   FiFile, 
   FiX, 
-  FiChevronLeft,
-  FiChevronRight,
   FiRotateCw,
   FiMove,
   FiGrid,
@@ -15,16 +13,18 @@ const ROTATION_STEP = 5; // degrees
 const POSITION_STEP = 0.2; // units
 interface SidebarProps {
   onFileLoad: (file: File | null) => void;
-  isCollapsed: boolean;
-  onToggleCollapse: () => void;
   transform: SplatTransform;
   onTransformChange: (transform: SplatTransform) => void;
   showGrid: boolean;
   onToggleGrid: () => void;
   onResetCamera: () => void;
+  movementSensitivity: number;
+  rotationSensitivity: number;
+  onMovementSensitivityChange: (value: number) => void;
+  onRotationSensitivityChange: (value: number) => void;
 }
 
-function Sidebar({ onFileLoad, isCollapsed, onToggleCollapse, transform, onTransformChange, showGrid, onToggleGrid, onResetCamera }: SidebarProps) {
+function Sidebar({ onFileLoad, transform, onTransformChange, showGrid, onToggleGrid, onResetCamera, movementSensitivity, rotationSensitivity, onMovementSensitivityChange, onRotationSensitivityChange }: SidebarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -106,24 +106,10 @@ function Sidebar({ onFileLoad, isCollapsed, onToggleCollapse, transform, onTrans
   };
 
   return (
-    <div className={`absolute left-0 top-0 h-full bg-white/70 backdrop-blur-md border-r border-white/20 flex flex-col shadow-2xl transition-all duration-300 z-10 ${isCollapsed ? 'w-16' : 'w-80'}`}>
-      {/* Toggle Button */}
-      <button
-        onClick={onToggleCollapse}
-        className="absolute top-4 -right-3 z-10 w-6 h-6 bg-white border border-gray-200 rounded-full shadow-md hover:bg-gray-50 flex items-center justify-center cursor-pointer transition-colors"
-        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        {isCollapsed ? <FiChevronRight className="text-gray-600 text-sm" /> : <FiChevronLeft className="text-gray-600 text-sm" />}
-      </button>
-
-      {/* Header */}
-      <div className={`p-6 border-b border-gray-200 ${isCollapsed ? 'hidden' : ''}`}>
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Videntium</h1>
-        <p className="text-sm text-gray-600">Gaussian Splatting Viewer</p>
-      </div>
+    <div className="absolute left-4 top-20 h-[calc(100%-6rem)] w-80 bg-white/70 backdrop-blur-md border border-white/20 flex flex-col shadow-2xl rounded-xl z-10 overflow-hidden">
 
       {/* Unified Import/File Zone */}
-      <div className={`p-4 space-y-3 ${isCollapsed ? 'hidden' : ''}`}>
+      <div className="p-4 space-y-3">
         <div
           onClick={handleImportClick}
           onDragOver={handleDragOver}
@@ -187,7 +173,7 @@ function Sidebar({ onFileLoad, isCollapsed, onToggleCollapse, transform, onTrans
       </div>
 
       {/* Rotation Controls */}
-      {currentFile && !isCollapsed && (
+      {currentFile && (
         <div className="px-4 pb-4">
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <h3 className="text-gray-900 text-sm font-medium mb-3 flex items-center gap-2">
@@ -260,7 +246,7 @@ function Sidebar({ onFileLoad, isCollapsed, onToggleCollapse, transform, onTrans
       )}
 
       {/* Info Section */}
-      <div className={`mt-auto p-4 ${isCollapsed ? 'hidden' : ''}`}>
+      <div className="mt-auto p-4">
         {/* Reset Camera Button */}
         <div className="mb-2">
           <button
@@ -294,10 +280,41 @@ function Sidebar({ onFileLoad, isCollapsed, onToggleCollapse, transform, onTrans
               <li>• <span className="text-gray-800">Q/E:</span> Move up/down</li>
             </ul>
           </div>
+
+        {/* Sensitivity Section */}
+        <div className="mt-4">
+          <h3 className="text-gray-900 text-sm font-medium mb-3">Sensitivity</h3>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-gray-600 mb-1 block">Movement</label>
+              <input
+                type="range"
+                min="0.1"
+                max="2"
+                step="0.1"
+                value={movementSensitivity}
+                onChange={(e) => onMovementSensitivityChange(parseFloat(e.target.value))}
+                className="w-full h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-600 mb-1 block">Rotation</label>
+              <input
+                type="range"
+                min="0.1"
+                max="2"
+                step="0.1"
+                value={rotationSensitivity}
+                onChange={(e) => onRotationSensitivityChange(parseFloat(e.target.value))}
+                className="w-full h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Footer */}
-      <div className={`p-4 border-t border-gray-200 ${isCollapsed ? 'hidden' : ''}`}>
+      <div className="p-4 border-t border-gray-200">
         <p className="text-xs text-gray-400 text-center">
           Powered by Spark & THREE.js
         </p>

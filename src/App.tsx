@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Sidebar from './Sidebar';
 import Viewer from './Viewer';
+import Header from './Header';
 
 export interface SplatTransform {
   rotationX: number;
@@ -13,9 +14,10 @@ export interface SplatTransform {
 
 function App() {
   const [fileToLoad, setFileToLoad] = useState<File | null>(null);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [resetCameraTrigger, setResetCameraTrigger] = useState(0);
+  const [movementSensitivity, setMovementSensitivity] = useState(0.2);
+  const [rotationSensitivity, setRotationSensitivity] = useState(0.4);
   const [splatTransform, setSplatTransform] = useState<SplatTransform>({
     rotationX: 0,
     rotationY: 0,
@@ -35,16 +37,26 @@ function App() {
 
   return (
     <div className='relative h-screen w-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden'>
-      <Viewer fileToLoad={fileToLoad} transform={splatTransform} showGrid={showGrid} resetCameraTrigger={resetCameraTrigger} />
+      <Header />
+      <Viewer 
+        fileToLoad={fileToLoad} 
+        transform={splatTransform} 
+        showGrid={showGrid} 
+        resetCameraTrigger={resetCameraTrigger}
+        movementSensitivity={movementSensitivity}
+        rotationSensitivity={rotationSensitivity}
+      />
       <Sidebar 
         onFileLoad={handleFileLoad} 
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         transform={splatTransform}
         onTransformChange={setSplatTransform}
         showGrid={showGrid}
         onToggleGrid={() => setShowGrid(!showGrid)}
         onResetCamera={() => setResetCameraTrigger(prev => prev + 1)}
+        movementSensitivity={movementSensitivity}
+        rotationSensitivity={rotationSensitivity}
+        onMovementSensitivityChange={setMovementSensitivity}
+        onRotationSensitivityChange={setRotationSensitivity}
       />
     </div>
   )
