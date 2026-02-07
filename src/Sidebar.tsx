@@ -107,9 +107,9 @@ function Sidebar({ onFileLoad, transform, onTransformChange, showGrid, onToggleG
 
   return (
     <div className="absolute left-4 top-20 h-[calc(100%-6rem)] w-80 bg-white/70 backdrop-blur-md border border-white/20 flex flex-col shadow-2xl rounded-xl z-10 overflow-hidden">
-
-      {/* Unified Import/File Zone */}
-      <div className="p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto">
+        {/* Unified Import/File Zone */}
+        <div className="p-4 space-y-3">
         <div
           onClick={handleImportClick}
           onDragOver={handleDragOver}
@@ -312,6 +312,7 @@ function Sidebar({ onFileLoad, transform, onTransformChange, showGrid, onToggleG
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Footer */}
