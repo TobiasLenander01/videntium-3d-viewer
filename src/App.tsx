@@ -1,11 +1,21 @@
-import reactLogo from './assets/react.svg'
+import { useState } from 'react';
+import Sidebar from './Sidebar';
+import Viewer from './Viewer';
 
 function App() {
+  const [fileToLoad, setFileToLoad] = useState<File | null>(null);
+
+  const handleFileLoad = (file: File) => {
+    setFileToLoad(file);
+  };
+
   return (
-    <main className='bg-gray-800 h-screen w-screen'>
-      <h1 className='text-4xl text-white'>Vite + React</h1>
-      <img src={reactLogo} className="logo react" alt="React logo" />
-    </main>
+    <div className='flex h-screen w-screen bg-gray-950 overflow-hidden'>
+      <Sidebar onFileLoad={handleFileLoad} />
+      <div className='flex-1'>
+        <Viewer fileToLoad={fileToLoad} />
+      </div>
+    </div>
   )
 }
 
