@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { SplatMesh } from '@sparkjsdev/spark';
-import type { SplatTransform } from './App';
 
 interface ViewerProps {
   fileToLoad: File | null;
@@ -10,6 +9,15 @@ interface ViewerProps {
   resetCameraTrigger: number;
   movementSensitivity: number;
   rotationSensitivity: number;
+}
+
+export interface SplatTransform {
+  rotationX: number;
+  rotationY: number;
+  rotationZ: number;
+  positionX: number;
+  positionY: number;
+  positionZ: number;
 }
 
 function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementSensitivity, rotationSensitivity }: ViewerProps) {
