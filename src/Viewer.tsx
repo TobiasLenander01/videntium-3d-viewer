@@ -22,6 +22,10 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
   const movementSensitivityRef = useRef(movementSensitivity);
   const rotationSensitivityRef = useRef(rotationSensitivity);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Optimization: Only render when necessary
+  const needsRender = useRef(true);
+  const renderCountdown = useRef(0);
 
   // Update sensitivity refs when props change
   useEffect(() => {
@@ -31,6 +35,11 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
   useEffect(() => {
     rotationSensitivityRef.current = rotationSensitivity;
   }, [rotationSensitivity]);
+
+  // Trigger render on prop changes
+  useEffect(() => {
+    needsRender.current = true;
+  }, [transform, showGrid, resetCameraTrigger]);
 
   // Camera control state
   const cameraStateRef = useRef({
@@ -65,12 +74,15 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
 
     // Renderer setup with performance optimizations
     const renderer = new THREE.WebGLRenderer({ 
-      antialias: true,
-      powerPreference: 'high-performance'
+      antialias: false, // OPTIMIZATION: Disable MSAA
+      powerPreference: 'high-performance',
+      stencil: false,
+      depth: true,
+      alpha: false
     });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    // Cap pixel ratio to reduce workload on high-DPI displays
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    // OPTIMIZATION: Cap at 1.0 for better performance
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -92,6 +104,7 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
       camera.aspect = container.clientWidth / container.clientHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(container.clientWidth, container.clientHeight);
+      needsRender.current = true;
     };
     window.addEventListener('resize', handleResize);
 
@@ -101,6 +114,7 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
         cameraStateRef.current.isDragging = true;
         cameraStateRef.current.lastMouseX = e.clientX;
         cameraStateRef.current.lastMouseY = e.clientY;
+        needsRender.current = true;
       }
     };
 
@@ -109,6 +123,8 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
 
       const deltaX = e.clientX - cameraStateRef.current.lastMouseX;
       const deltaY = e.clientY - cameraStateRef.current.lastMouseY;
+      
+      if (deltaX === 0 && deltaY === 0) return;
 
       cameraStateRef.current.yaw -= deltaX * 0.005 * rotationSensitivityRef.current;
       cameraStateRef.current.pitch -= deltaY * 0.005 * rotationSensitivityRef.current;
@@ -116,10 +132,12 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
 
       cameraStateRef.current.lastMouseX = e.clientX;
       cameraStateRef.current.lastMouseY = e.clientY;
+      needsRender.current = true;
     };
 
     const handleMouseUp = () => {
       cameraStateRef.current.isDragging = false;
+      needsRender.current = true;
     };
 
     const handleWheel = (e: WheelEvent) => {
@@ -138,11 +156,13 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
       state.position.x += forward.x * zoomSpeed;
       state.position.y += forward.y * zoomSpeed;
       state.position.z += forward.z * zoomSpeed;
+      needsRender.current = true;
     };
 
     // Keyboard controls
     const handleKeyDown = (e: KeyboardEvent) => {
       cameraStateRef.current.keys[e.key.toLowerCase()] = true;
+      needsRender.current = true;
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -171,8 +191,27 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
       }
       
       lastFrameTime = now - (elapsed % frameInterval);
-      
+
+      // PERFORMANCE: Demand-based rendering
       const state = cameraStateRef.current;
+      const isMoving = Object.values(state.keys).some(k => k);
+      
+      // Keep rendering for a while after events (loading, etc.)
+      if (renderCountdown.current > 0) {
+        renderCountdown.current--;
+      }
+
+      const shouldRender = isMoving || state.isDragging || needsRender.current || renderCountdown.current > 0;
+
+      if (!shouldRender) {
+        return;
+      }
+
+      // Reset one-shot render flag
+      if (!isMoving && !state.isDragging) {
+        needsRender.current = false;
+      }
+      
       const camera = cameraRef.current;
       const renderer = rendererRef.current;
       const scene = sceneRef.current;
@@ -285,6 +324,7 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
       if (splatMeshRef.current) {
         sceneRef.current.remove(splatMeshRef.current);
         splatMeshRef.current = null;
+        needsRender.current = true;
       }
       return;
     }
@@ -302,7 +342,10 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
         const url = URL.createObjectURL(fileToLoad);
 
         // Create new splat mesh
-        const splatMesh = new SplatMesh({ url });
+        const splatMesh = new SplatMesh({ 
+          url: url,
+          maxSplats: 500000
+        });
         splatMesh.position.set(0, 0, 0);
         if (sceneRef.current) {
           sceneRef.current.add(splatMesh);
@@ -316,11 +359,14 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
 
         // Clean up URL
         URL.revokeObjectURL(url);
+        needsRender.current = true;
       } catch (error) {
         console.error('Error loading splat file:', error);
         alert('Error loading splat file. Please make sure it is a valid .ply or .splat file.');
       } finally {
         setIsLoading(false);
+        // Force rendering for a set period to ensure splat is fully visible after loading
+        renderCountdown.current = 120; // ~2 seconds at 60fps
       }
     };
 
