@@ -44,7 +44,11 @@ const data = {
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  onFileSelect: (file: File) => void;
+}
+
+export function AppSidebar({ onFileSelect, ...props }: AppSidebarProps) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -63,7 +67,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavModel />
+        <NavModel onFileSelect={onFileSelect} />
         <NavControls />
       </SidebarContent>
       <SidebarFooter>
