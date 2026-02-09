@@ -63,10 +63,14 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
     camera.position.set(0, 3, 7);
     cameraRef.current = camera;
 
-    // Renderer setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    // Renderer setup with performance optimizations
+    const renderer = new THREE.WebGLRenderer({ 
+      antialias: true,
+      powerPreference: 'high-performance'
+    });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    // Cap pixel ratio to reduce workload on high-DPI displays
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -152,8 +156,22 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
-    // Animation loop
+    // Animation loop with frame rate limiting
+    let lastFrameTime = performance.now();
+    const targetFPS = 60;
+    const frameInterval = 1000 / targetFPS;
+    
     const animate = () => {
+      const now = performance.now();
+      const elapsed = now - lastFrameTime;
+      
+      // Skip frame if not enough time has passed
+      if (elapsed < frameInterval) {
+        return;
+      }
+      
+      lastFrameTime = now - (elapsed % frameInterval);
+      
       const state = cameraStateRef.current;
       const camera = cameraRef.current;
       const renderer = rendererRef.current;
