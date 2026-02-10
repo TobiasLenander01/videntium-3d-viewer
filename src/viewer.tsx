@@ -39,6 +39,7 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
   const getBackgroundColor = (): THREE.Color => {
     const root = document.documentElement;
     const bgColor = getComputedStyle(root).getPropertyValue('--background').trim();
+    console.log("CSS color variable retrieved: " + bgColor);
     
     // Parse HSL string: "hsl(223.8136 0.0000% 3.9388%)"
     const hslMatch = bgColor.match(/hsl\(([^)]+)\)/);
@@ -70,8 +71,12 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
         b = hue2rgb(p, q, hNorm - 1/3);
       }
       
-      return new THREE.Color(r, g, b);
+      const threeColor = new THREE.Color(r, g, b);
+      console.log("Viewer themed background created");
+      return threeColor;
     }
+
+    console.warn("Viewer falling back to black background color")
     
     // Fallback to black
     return new THREE.Color(0x000000);

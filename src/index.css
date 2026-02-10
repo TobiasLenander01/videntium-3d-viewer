@@ -68,7 +68,7 @@ html, body, #root {
 }
 
 .dark {
-  --background: hsl(0, 0%, 0%);
+  --background: hsl(0, 86%, 46%);
   --foreground: hsl(223.8136 0.0004% 98.0256%);
   --card: hsl(223.8136 0.0000% 9.0527%);
   --card-foreground: hsl(223.8136 0.0004% 98.0256%);
