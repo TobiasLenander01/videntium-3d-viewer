@@ -162,7 +162,7 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
     startY: number;
     lastX: number;
     lastY: number;
-    side: 'left' | 'right';
+    zone: 'top' | 'bottom';
   }>>(new Map());
 
   useEffect(() => {
@@ -282,21 +282,21 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
       cameraStateRef.current.keys[e.key.toLowerCase()] = false;
     };
 
-    // Touch controls — right half rotates, left half moves
+    // Touch controls — top half rotates, bottom half moves
     const handleTouchStart = (e: TouchEvent) => {
       e.preventDefault();
       const rect = renderer.domElement.getBoundingClientRect();
-      const midX = rect.left + rect.width / 2;
+      const midY = rect.top + rect.height / 2;
 
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
-        const side = touch.clientX >= midX ? 'right' : 'left';
+        const zone = touch.clientY <= midY ? 'top' : 'bottom';
         touchStateRef.current.set(touch.identifier, {
           startX: touch.clientX,
           startY: touch.clientY,
           lastX: touch.clientX,
           lastY: touch.clientY,
-          side,
+          zone,
         });
       }
       needsRender.current = true;
@@ -316,13 +316,13 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
 
         if (deltaX === 0 && deltaY === 0) continue;
 
-        if (tracked.side === 'right') {
-          // Right side — rotate camera
-          state.yaw -= deltaX * 0.005 * rotationSensitivityRef.current;
-          state.pitch -= deltaY * 0.005 * rotationSensitivityRef.current;
+        if (tracked.zone === 'top') {
+          // Top half — rotate camera (inverted for natural feel)
+          state.yaw += deltaX * 0.005 * rotationSensitivityRef.current;
+          state.pitch += deltaY * 0.005 * rotationSensitivityRef.current;
           state.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, state.pitch));
         } else {
-          // Left side — move camera (strafe horizontal, forward/back vertical)
+          // Bottom half — move camera (strafe horizontal, forward/back vertical)
           const forward = new THREE.Vector3(
             Math.cos(state.pitch) * Math.sin(state.yaw),
             0,
@@ -333,8 +333,8 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
           right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
           const speed = 0.01 * movementSensitivityRef.current;
-          state.position.addScaledVector(right, deltaX * speed);
-          state.position.addScaledVector(forward, -deltaY * speed);
+          state.position.addScaledVector(right, -deltaX * speed);
+          state.position.addScaledVector(forward, deltaY * speed);
         }
 
         tracked.lastX = touch.clientX;
