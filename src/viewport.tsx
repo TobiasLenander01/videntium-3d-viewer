@@ -156,6 +156,15 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
     keys: {} as Record<string, boolean>,
   });
 
+  // Touch control state — tracks active touches by identifier
+  const touchStateRef = useRef<Map<number, {
+    startX: number;
+    startY: number;
+    lastX: number;
+    lastY: number;
+    side: 'left' | 'right';
+  }>>(new Map());
+
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -273,6 +282,78 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
       cameraStateRef.current.keys[e.key.toLowerCase()] = false;
     };
 
+    // Touch controls — right half rotates, left half moves
+    const handleTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      const rect = renderer.domElement.getBoundingClientRect();
+      const midX = rect.left + rect.width / 2;
+
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        const side = touch.clientX >= midX ? 'right' : 'left';
+        touchStateRef.current.set(touch.identifier, {
+          startX: touch.clientX,
+          startY: touch.clientY,
+          lastX: touch.clientX,
+          lastY: touch.clientY,
+          side,
+        });
+      }
+      needsRender.current = true;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      const state = cameraStateRef.current;
+
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        const tracked = touchStateRef.current.get(touch.identifier);
+        if (!tracked) continue;
+
+        const deltaX = touch.clientX - tracked.lastX;
+        const deltaY = touch.clientY - tracked.lastY;
+
+        if (deltaX === 0 && deltaY === 0) continue;
+
+        if (tracked.side === 'right') {
+          // Right side — rotate camera
+          state.yaw -= deltaX * 0.005 * rotationSensitivityRef.current;
+          state.pitch -= deltaY * 0.005 * rotationSensitivityRef.current;
+          state.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, state.pitch));
+        } else {
+          // Left side — move camera (strafe horizontal, forward/back vertical)
+          const forward = new THREE.Vector3(
+            Math.cos(state.pitch) * Math.sin(state.yaw),
+            0,
+            Math.cos(state.pitch) * Math.cos(state.yaw)
+          ).normalize();
+
+          const right = new THREE.Vector3();
+          right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+          const speed = 0.01 * movementSensitivityRef.current;
+          state.position.addScaledVector(right, deltaX * speed);
+          state.position.addScaledVector(forward, -deltaY * speed);
+        }
+
+        tracked.lastX = touch.clientX;
+        tracked.lastY = touch.clientY;
+        needsRender.current = true;
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        touchStateRef.current.delete(e.changedTouches[i].identifier);
+      }
+    };
+
+    renderer.domElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+    renderer.domElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+    renderer.domElement.addEventListener('touchend', handleTouchEnd);
+    renderer.domElement.addEventListener('touchcancel', handleTouchEnd);
+
     renderer.domElement.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
@@ -305,14 +386,15 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
         renderCountdown.current--;
       }
 
-      const shouldRender = isMoving || state.isDragging || needsRender.current || renderCountdown.current > 0;
+      const isTouching = touchStateRef.current.size > 0;
+      const shouldRender = isMoving || state.isDragging || isTouching || needsRender.current || renderCountdown.current > 0;
 
       if (!shouldRender) {
         return;
       }
 
       // Reset one-shot render flag
-      if (!isMoving && !state.isDragging) {
+      if (!isMoving && !state.isDragging && !isTouching) {
         needsRender.current = false;
       }
       
@@ -391,6 +473,10 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
     // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
+      renderer.domElement.removeEventListener('touchstart', handleTouchStart);
+      renderer.domElement.removeEventListener('touchmove', handleTouchMove);
+      renderer.domElement.removeEventListener('touchend', handleTouchEnd);
+      renderer.domElement.removeEventListener('touchcancel', handleTouchEnd);
       renderer.domElement.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
