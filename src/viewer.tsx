@@ -72,8 +72,30 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
       }
       
       const threeColor = new THREE.Color(r, g, b);
-      console.log("Viewer themed background created");
+      console.log("Viewer themed background created from HSL");
       return threeColor;
+    }
+    
+    // Try parsing as hex color (#fff, #ffffff, etc.)
+    if (bgColor.startsWith('#')) {
+      try {
+        const threeColor = new THREE.Color(bgColor);
+        console.log("Viewer themed background created from hex");
+        return threeColor;
+      } catch {
+        console.warn("Failed to parse hex color:", bgColor);
+      }
+    }
+    
+    // Try parsing as rgb/rgba
+    const rgbMatch = bgColor.match(/rgba?\(([^)]+)\)/);
+    if (rgbMatch) {
+      const values = rgbMatch[1].split(',').map(v => parseFloat(v.trim()));
+      if (values.length >= 3) {
+        const threeColor = new THREE.Color(values[0] / 255, values[1] / 255, values[2] / 255);
+        console.log("Viewer themed background created from RGB");
+        return threeColor;
+      }
     }
 
     console.warn("Viewer falling back to black background color")
