@@ -15,8 +15,6 @@ export default function Page() {
     positionY: 0,
     positionZ: 0,
   })
-  const [showGrid] = useState(false)
-  const [resetCameraTrigger] = useState(0)
   const [movementSensitivity] = useState(1)
   const [rotationSensitivity] = useState(1)
   return (
@@ -25,8 +23,6 @@ export default function Page() {
         <Viewer
           fileToLoad={fileToLoad}
           transform={transform}
-          showGrid={showGrid}
-          resetCameraTrigger={resetCameraTrigger}
           movementSensitivity={movementSensitivity}
           rotationSensitivity={rotationSensitivity}
         />
