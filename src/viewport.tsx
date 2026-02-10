@@ -452,6 +452,7 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
           maxSplats: 500000
         });
         splatMesh.position.set(0, 0, 0);
+        splatMesh.quaternion.set(1, 0, 0, 0); // 180° X-axis flip for correct orientation
         if (sceneRef.current) {
           sceneRef.current.add(splatMesh);
         }
@@ -482,7 +483,7 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
   useEffect(() => {
     if (splatMeshRef.current) {
       splatMeshRef.current.rotation.set(
-        transform.rotationX,
+        transform.rotationX + Math.PI, // Base 180° flip for correct orientation
         transform.rotationY,
         transform.rotationZ
       );
