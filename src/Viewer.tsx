@@ -333,6 +333,7 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
         sceneRef.current.remove(splatMeshRef.current);
         splatMeshRef.current = null;
         needsRender.current = true;
+        renderCountdown.current = 60; // Render for 1 second to ensure change is visible
       }
       return;
     }
@@ -400,10 +401,10 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
   }, [transform]);
 
   return (
-    <div className="relative w-full h-full">
+    <div className="w-full h-full">
       <div ref={containerRef} className="w-full h-full" />
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+        <div className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-sm z-10">
           <div className="text-gray-900 text-xl font-medium">Loading splat...</div>
         </div>
       )}

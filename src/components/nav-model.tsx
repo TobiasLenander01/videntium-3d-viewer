@@ -147,7 +147,7 @@ export function NavModel({ setFileToLoad, transform, setTransform }: NavModelPro
               <SidebarMenuButton tooltip={"Position"}>
                 <Move3D />
                 <span>Position</span>
-                <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 hover:cursor-pointer" />
               </SidebarMenuButton>
             </CollapsibleTrigger>
             <CollapsibleContent>
@@ -191,7 +191,7 @@ export function NavModel({ setFileToLoad, transform, setTransform }: NavModelPro
                       onClick={resetPosition}
                       variant="outline"
                       size="sm"
-                      className="w-full h-7 text-xs"
+                      className="w-full h-7 text-xs hover:cursor-pointer"
                     >
                       Reset Position
                     </Button>
@@ -208,7 +208,7 @@ export function NavModel({ setFileToLoad, transform, setTransform }: NavModelPro
               <SidebarMenuButton tooltip={"Rotation"}>
                 <Rotate3D />
                 <span>Rotation</span>
-                <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 hover:cursor-pointer" />
               </SidebarMenuButton>
             </CollapsibleTrigger>
             <CollapsibleContent>
@@ -252,7 +252,7 @@ export function NavModel({ setFileToLoad, transform, setTransform }: NavModelPro
                       onClick={resetRotation}
                       variant="outline"
                       size="sm"
-                      className="w-full h-7 text-xs"
+                      className="w-full h-7 text-xs hover:cursor-pointer"
                     >
                       Reset Rotation
                     </Button>

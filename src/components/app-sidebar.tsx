@@ -18,13 +18,13 @@ import {
 import { NavModel } from "@/components/nav-model"
 import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
+import { DarkModeSwitch } from "@/components/ui/darkmode-switch"
 import type { SplatTransform } from "@/viewer"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarRail,
 } from "@/components/ui/sidebar"
 
 // This is sample data.
@@ -175,6 +175,7 @@ export function AppSidebar({ setFileToLoad, transform, setTransform, ...props }:
             <span className="text-lg font-semibold">Videntium</span>
             <span className="text-xs text-muted-foreground">3D Viewer</span>
           </div>
+          <DarkModeSwitch className="ml-auto" />
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -184,7 +185,6 @@ export function AppSidebar({ setFileToLoad, transform, setTransform, ...props }:
       <SidebarFooter>
         <NavUser user={data.user} />
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
   )
 }
