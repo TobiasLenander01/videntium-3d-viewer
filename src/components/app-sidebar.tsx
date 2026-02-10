@@ -6,11 +6,13 @@ import {
 } from "lucide-react"
 
 import { NavModel } from "@/components/nav-model"
+import { NavControls } from "@/components/nav-controls"
 import { DarkModeSwitch } from "@/components/ui/darkmode-switch"
 import type { SplatTransform } from "@/viewer"
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarHeader,
 } from "@/components/ui/sidebar"
 
@@ -33,9 +35,9 @@ export function AppSidebar({ setFileToLoad, transform, setTransform, ...props }:
       <SidebarContent>
         <NavModel setFileToLoad={setFileToLoad} transform={transform} setTransform={setTransform} />
       </SidebarContent>
-      {/* <SidebarFooter>
-        <NavUser user={data.user} />
-      </SidebarFooter> */}
+      <SidebarFooter>
+        <NavControls />
+      </SidebarFooter>
     </Sidebar>
   )
 }
