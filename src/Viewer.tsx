@@ -394,6 +394,8 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
         transform.positionY,
         transform.positionZ
       );
+      needsRender.current = true;
+      renderCountdown.current = 60; // Render for 1 second to ensure change is visible
     }
   }, [transform]);
 

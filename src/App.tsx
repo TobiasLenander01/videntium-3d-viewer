@@ -1,18 +1,35 @@
 import { useState } from "react"
-import { ThemeProvider } from "@/components/theme-provider"
-import { TooltipProvider } from "@/components/ui/tooltip"
 import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
 import Viewer from "@/viewer"
 import type { SplatTransform } from "@/viewer"
+import { ArrowLeftToLine, ArrowRightFromLine } from "lucide-react"
 import {
   SidebarInset,
   SidebarProvider,
+  useSidebar,
 } from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
+
+function FloatingSidebarTrigger() {
+  const { open, toggleSidebar } = useSidebar()
+  
+  return (
+    <Button
+      onClick={toggleSidebar}
+      size="icon"
+      variant="outline"
+      className={`fixed top-4 z-50 h-10 w-10 rounded-md border bg-background shadow-md hover:bg-accent hover:text-accent-foreground transition-all duration-300 ${
+        open ? 'left-[calc(var(--sidebar-width)+1rem)]' : 'left-4'
+      }`}
+    >
+      {open ? <ArrowLeftToLine className="h-4 w-4" /> : <ArrowRightFromLine className="h-4 w-4" />}
+    </Button>
+  )
+}
 
 export default function Page() {
   const [fileToLoad, setFileToLoad] = useState<File | null>(null)
-  const [transform] = useState<SplatTransform>({
+  const [transform, setTransform] = useState<SplatTransform>({
     rotationX: 0,
     rotationY: 0,
     rotationZ: 0,
@@ -24,32 +41,20 @@ export default function Page() {
   const [resetCameraTrigger] = useState(0)
   const [movementSensitivity] = useState(1)
   const [rotationSensitivity] = useState(1)
-
   return (
-    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <TooltipProvider>
-        <SidebarProvider
-          style={
-            {
-              "--sidebar-width": "calc(var(--spacing) * 72)",
-              "--header-height": "calc(var(--spacing) * 12)",
-            } as React.CSSProperties
-          }
-        >
-          <AppSidebar variant="inset" onFileSelect={setFileToLoad} />
-          <SidebarInset>
-            <SiteHeader />
-            <Viewer
-              fileToLoad={fileToLoad}
-              transform={transform}
-              showGrid={showGrid}
-              resetCameraTrigger={resetCameraTrigger}
-              movementSensitivity={movementSensitivity}
-              rotationSensitivity={rotationSensitivity}
-            />
-          </SidebarInset>
-        </SidebarProvider>
-      </TooltipProvider>
-    </ThemeProvider>
+    <SidebarProvider>
+      <AppSidebar setFileToLoad={setFileToLoad} transform={transform} setTransform={setTransform} />
+      <SidebarInset>
+        <FloatingSidebarTrigger />
+        <Viewer
+          fileToLoad={fileToLoad}
+          transform={transform}
+          showGrid={showGrid}
+          resetCameraTrigger={resetCameraTrigger}
+          movementSensitivity={movementSensitivity}
+          rotationSensitivity={rotationSensitivity}
+        />
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
