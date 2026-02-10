@@ -35,6 +35,48 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
   const needsRender = useRef(true);
   const renderCountdown = useRef(0);
 
+  // Function to convert HSL from CSS variable to THREE.Color
+  const getBackgroundColor = (): THREE.Color => {
+    const root = document.documentElement;
+    const bgColor = getComputedStyle(root).getPropertyValue('--color-background').trim();
+    
+    // Parse HSL string: "hsl(223.8136 0.0000% 3.9388%)"
+    const hslMatch = bgColor.match(/hsl\(([^)]+)\)/);
+    if (hslMatch) {
+      const [h, s, l] = hslMatch[1].split(/\s+/).map(val => parseFloat(val.replace('%', '')));
+      
+      // Convert HSL to RGB
+      const hNorm = h / 360;
+      const sNorm = s / 100;
+      const lNorm = l / 100;
+      
+      let r, g, b;
+      if (sNorm === 0) {
+        r = g = b = lNorm;
+      } else {
+        const hue2rgb = (p: number, q: number, t: number) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        
+        const q = lNorm < 0.5 ? lNorm * (1 + sNorm) : lNorm + sNorm - lNorm * sNorm;
+        const p = 2 * lNorm - q;
+        r = hue2rgb(p, q, hNorm + 1/3);
+        g = hue2rgb(p, q, hNorm);
+        b = hue2rgb(p, q, hNorm - 1/3);
+      }
+      
+      return new THREE.Color(r, g, b);
+    }
+    
+    // Fallback to black
+    return new THREE.Color(0x000000);
+  };
+
   // Update sensitivity refs when props change
   useEffect(() => {
     movementSensitivityRef.current = movementSensitivity;
@@ -48,6 +90,30 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
   useEffect(() => {
     needsRender.current = true;
   }, [transform, showGrid, resetCameraTrigger]);
+
+  // Update background color when theme changes
+  useEffect(() => {
+    const updateBackgroundColor = () => {
+      if (sceneRef.current) {
+        sceneRef.current.background = getBackgroundColor();
+        needsRender.current = true;
+        renderCountdown.current = 2;
+      }
+    };
+
+    // Listen for class changes on document.documentElement (for dark mode)
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          updateBackgroundColor();
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, { attributes: true });
+
+    return () => observer.disconnect();
+  }, []);
 
   // Camera control state
   const cameraStateRef = useRef({
@@ -67,7 +133,7 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
 
     // Scene setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
+    scene.background = getBackgroundColor();
     sceneRef.current = scene;
 
     // Camera setup
