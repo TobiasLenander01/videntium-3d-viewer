@@ -25,13 +25,8 @@ export function AppSidebar({ setFileToLoad, transform, setTransform, ...props }:
     <Sidebar {...props}>
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Stone className="h-5 w-5" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-semibold">Videntium</span>
-            <span className="text-xs text-muted-foreground">3D Viewer</span>
-          </div>
+          <Stone className="h-5 w-5" />
+          <span className="text-lg font-semibold">Videntium</span>
           <DarkModeSwitch className="ml-auto" />
         </div>
       </SidebarHeader>
