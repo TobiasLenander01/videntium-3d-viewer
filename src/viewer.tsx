@@ -38,7 +38,7 @@ function Viewer({ fileToLoad, transform, showGrid, resetCameraTrigger, movementS
   // Function to convert HSL from CSS variable to THREE.Color
   const getBackgroundColor = (): THREE.Color => {
     const root = document.documentElement;
-    const bgColor = getComputedStyle(root).getPropertyValue('--color-background').trim();
+    const bgColor = getComputedStyle(root).getPropertyValue('--background').trim();
     
     // Parse HSL string: "hsl(223.8136 0.0000% 3.9388%)"
     const hslMatch = bgColor.match(/hsl\(([^)]+)\)/);
