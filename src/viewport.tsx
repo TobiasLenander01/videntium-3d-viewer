@@ -18,6 +18,9 @@ export interface SplatTransform {
   positionX: number;
   positionY: number;
   positionZ: number;
+  scaleX: number;
+  scaleY: number;
+  scaleZ: number;
 }
 
 function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movementSensitivity, rotationSensitivity }: ViewportProps) {
@@ -488,6 +491,12 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
         transform.positionY,
         transform.positionZ
       );
+      splatMeshRef.current.scale.set(
+        transform.scaleX,
+        transform.scaleY,
+        transform.scaleZ
+      );
+      splatMeshRef.current.updateMatrix();
       needsRender.current = true;
       renderCountdown.current = 60; // Render for 1 second to ensure change is visible
     }

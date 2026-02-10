@@ -14,6 +14,9 @@ export default function Page() {
     positionX: 0,
     positionY: 0,
     positionZ: 0,
+    scaleX: 1,
+    scaleY: 1,
+    scaleZ: 1,
   })
   const [movementSensitivity] = useState(1)
   const [rotationSensitivity] = useState(1)

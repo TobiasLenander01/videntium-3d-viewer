@@ -3,6 +3,7 @@ import {
   ChevronRight,
   Move3D,
   Rotate3D,
+  Ruler,
   FileUp,
   X,
 } from "lucide-react"
@@ -37,6 +38,7 @@ interface NavModelProps {
 export function NavModel({ setFileToLoad, transform, setTransform }: NavModelProps) {
   const [position, setPosition] = useState({ x: 0, y: 0, z: 0 })
   const [rotation, setRotation] = useState({ x: 0, y: 0, z: 0 })
+  const [scale, setScale] = useState(1)
   const [loadedFileName, setLoadedFileName] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -66,6 +68,18 @@ export function NavModel({ setFileToLoad, transform, setTransform }: NavModelPro
     })
   }
 
+  const handleScaleChange = (value: string) => {
+    const numValue = parseFloat(value)
+    const safeValue = isNaN(numValue) ? 1 : numValue
+    setScale(safeValue)
+    setTransform({
+      ...transform,
+      scaleX: safeValue,
+      scaleY: safeValue,
+      scaleZ: safeValue,
+    })
+  }
+
   const resetPosition = () => {
     setPosition({ x: 0, y: 0, z: 0 })
     setTransform({
@@ -73,6 +87,16 @@ export function NavModel({ setFileToLoad, transform, setTransform }: NavModelPro
       positionX: 0,
       positionY: 0,
       positionZ: 0,
+    })
+  }
+
+  const resetScale = () => {
+    setScale(1)
+    setTransform({
+      ...transform,
+      scaleX: 1,
+      scaleY: 1,
+      scaleZ: 1,
     })
   }
 
@@ -257,6 +281,45 @@ export function NavModel({ setFileToLoad, transform, setTransform }: NavModelPro
                       className="w-full h-7 text-xs hover:cursor-pointer"
                     >
                       Reset Rotation
+                    </Button>
+                  </div>
+                </SidebarMenuSubItem>
+              </SidebarMenuSub>
+            </CollapsibleContent>
+          </SidebarMenuItem>
+        </Collapsible>
+
+        <Collapsible asChild defaultOpen={false} className="group/collapsible">
+          <SidebarMenuItem>
+            <CollapsibleTrigger asChild>
+              <SidebarMenuButton tooltip={"Scale"}>
+                <Ruler />
+                <span>Scale</span>
+                <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 hover:cursor-pointer" />
+              </SidebarMenuButton>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarMenuSub>
+                <SidebarMenuSubItem>
+                  <div className="flex flex-col gap-2 px-2 py-2">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="scl" className="w-12 text-xs">Size</Label>
+                      <Input
+                        id="scl"
+                        type="number"
+                        step="0.1"
+                        value={scale}
+                        onChange={(e) => handleScaleChange(e.target.value)}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <Button
+                      onClick={resetScale}
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-7 text-xs hover:cursor-pointer"
+                    >
+                      Reset Size
                     </Button>
                   </div>
                 </SidebarMenuSubItem>
