@@ -101,7 +101,8 @@ export function NavModel({ setFileToLoad, transform, setTransform }: NavModelPro
     }
   }
 
-  const handleUnloadFile = () => {
+  const handleUnloadFile = (e: React.MouseEvent) => {
+    e.stopPropagation()
     setFileToLoad(null)
     setLoadedFileName(null)
     if (fileInputRef.current) {
@@ -110,11 +111,7 @@ export function NavModel({ setFileToLoad, transform, setTransform }: NavModelPro
   }
 
   const handleFileButtonClick = () => {
-    if (loadedFileName) {
-      handleUnloadFile()
-    } else {
-      fileInputRef.current?.click()
-    }
+    fileInputRef.current?.click()
   }
 
   return (
@@ -132,12 +129,17 @@ export function NavModel({ setFileToLoad, transform, setTransform }: NavModelPro
           />
           <SidebarMenuButton
             onClick={handleFileButtonClick}
-            tooltip={loadedFileName ? "Unload Model" : "Load Model"}
+            tooltip={loadedFileName ? "Replace Model" : "Load Model"}
             className="w-full"
           >
             <FileUp />
             <span className="truncate">{loadedFileName || "Load Model"}</span>
-            {loadedFileName && <X className="ml-auto hover:cursor-pointer" />}
+            {loadedFileName && (
+              <X 
+                className="ml-auto hover:cursor-pointer" 
+                onClick={handleUnloadFile}
+              />
+            )}
           </SidebarMenuButton>
         </SidebarMenuItem>
 
