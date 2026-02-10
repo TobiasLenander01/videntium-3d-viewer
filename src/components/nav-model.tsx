@@ -137,7 +137,7 @@ export function NavModel({ setFileToLoad, transform, setTransform }: NavModelPro
           >
             <FileUp />
             <span className="truncate">{loadedFileName || "Load Model"}</span>
-            {loadedFileName && <X className="ml-auto" />}
+            {loadedFileName && <X className="ml-auto hover:cursor-pointer" />}
           </SidebarMenuButton>
         </SidebarMenuItem>
 
