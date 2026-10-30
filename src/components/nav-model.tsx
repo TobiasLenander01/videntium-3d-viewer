@@ -1,5 +1,6 @@
-import { useState, useRef } from "react"
+import { useState } from "react"
 import {
+  Church,
   ChevronRight,
   Move3D,
   Rotate3D,
@@ -28,19 +29,22 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import type { SplatTransform } from "@/viewer"
+import { DEMO_SPLAT, type SplatSource } from "@/lib/splat-source"
 
 interface NavModelProps {
-  setFileToLoad: (file: File | null) => void
+  splatToLoad: SplatSource | null
+  setSplatToLoad: (splat: SplatSource | null) => void
+  openFilePicker: () => void
+  loadDemo: () => void
   transform: SplatTransform
   setTransform: (transform: SplatTransform) => void
 }
 
-export function NavModel({ setFileToLoad, transform, setTransform }: NavModelProps) {
+export function NavModel({ splatToLoad, setSplatToLoad, openFilePicker, loadDemo, transform, setTransform }: NavModelProps) {
   const [position, setPosition] = useState({ x: 0, y: 0, z: 0 })
   const [rotation, setRotation] = useState({ x: 0, y: 0, z: 0 })
   const [scale, setScale] = useState(1)
-  const [loadedFileName, setLoadedFileName] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const loadedFileName = splatToLoad?.name ?? null
 
   const handlePositionChange = (axis: 'x' | 'y' | 'z', value: string) => {
     const numValue = parseFloat(value) || 0
@@ -110,32 +114,9 @@ export function NavModel({ setFileToLoad, transform, setTransform }: NavModelPro
     })
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const validExtensions = ['.ply', '.splat', '.spz']
-      const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()
-      if (validExtensions.includes(fileExtension)) {
-        setFileToLoad(file)
-        setLoadedFileName(file.name)
-      } else {
-        alert('Please select a valid file (.ply, .splat, or .spz)')
-        e.target.value = ''
-      }
-    }
-  }
-
   const handleUnloadFile = (e: React.MouseEvent) => {
     e.stopPropagation()
-    setFileToLoad(null)
-    setLoadedFileName(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }
-
-  const handleFileButtonClick = () => {
-    fileInputRef.current?.click()
+    setSplatToLoad(null)
   }
 
   return (
@@ -143,16 +124,8 @@ export function NavModel({ setFileToLoad, transform, setTransform }: NavModelPro
       <SidebarGroupLabel>Model</SidebarGroupLabel>
       <SidebarMenu>
         <SidebarMenuItem>
-          <input
-            ref={fileInputRef}
-            id="file-upload"
-            type="file"
-            accept=".ply,.splat,.spz"
-            onChange={handleFileChange}
-            className="hidden"
-          />
           <SidebarMenuButton
-            onClick={handleFileButtonClick}
+            onClick={openFilePicker}
             tooltip={loadedFileName ? "Replace Model" : "Load Model"}
             className="w-full"
           >
@@ -164,6 +137,17 @@ export function NavModel({ setFileToLoad, transform, setTransform }: NavModelPro
                 onClick={handleUnloadFile}
               />
             )}
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            onClick={loadDemo}
+            isActive={splatToLoad === DEMO_SPLAT}
+            tooltip={`Demo: ${DEMO_SPLAT.name}`}
+          >
+            <Church />
+            <span className="truncate">Demo: {DEMO_SPLAT.name}</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
 

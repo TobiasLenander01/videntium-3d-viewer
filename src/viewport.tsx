@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { SplatMesh } from '@sparkjsdev/spark';
+import type { SplatSource } from '@/lib/splat-source';
 
 export interface ViewportProps {
-  fileToLoad: File | null;
+  splatToLoad: SplatSource | null;
   transform: SplatTransform;
   showGrid: boolean;
   resetCameraTrigger: number;
@@ -23,7 +24,7 @@ export interface SplatTransform {
   scaleZ: number;
 }
 
-function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movementSensitivity, rotationSensitivity }: ViewportProps) {
+function Viewport({ splatToLoad, transform, showGrid, resetCameraTrigger, movementSensitivity, rotationSensitivity }: ViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -510,7 +511,8 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
     if (!sceneRef.current) return;
 
     // If no file, remove existing splat mesh
-    if (!fileToLoad) {
+    if (!splatToLoad) {
+      setIsLoading(false);
       if (splatMeshRef.current) {
         sceneRef.current.remove(splatMeshRef.current);
         splatMeshRef.current = null;
@@ -520,6 +522,11 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
       return;
     }
 
+    let cancelled = false;
+    // Local files need an object URL, hosted files (e.g. the demo) already have one
+    const isFile = splatToLoad instanceof File;
+    const url = isFile ? URL.createObjectURL(splatToLoad) : splatToLoad.url;
+
     const loadSplat = async () => {
       setIsLoading(true);
       try {
@@ -528,9 +535,6 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
           sceneRef.current.remove(splatMeshRef.current);
           splatMeshRef.current = null;
         }
-
-        // Create URL from file
-        const url = URL.createObjectURL(fileToLoad);
 
         // Create new splat mesh
         const splatMesh = new SplatMesh({ 
@@ -549,21 +553,32 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
         cameraStateRef.current.pitch = -0.4;
         cameraStateRef.current.yaw = Math.PI;
 
-        // Clean up URL
-        URL.revokeObjectURL(url);
+        // Wait for the splat to download and decode
+        await splatMesh.initialized;
         needsRender.current = true;
       } catch (error) {
         console.error('Error loading splat file:', error);
-        alert('Error loading splat file. Please make sure it is a valid .ply or .splat file.');
+        if (!cancelled) {
+          alert('Error loading splat file. Please make sure it is a valid .ply, .splat, .spz or .sog file.');
+        }
       } finally {
-        setIsLoading(false);
-        // Force rendering for a set period to ensure splat is fully visible after loading
-        renderCountdown.current = 120; // ~2 seconds at 60fps
+        if (isFile) {
+          URL.revokeObjectURL(url);
+        }
+        if (!cancelled) {
+          setIsLoading(false);
+          // Force rendering for a set period to ensure splat is fully visible after loading
+          renderCountdown.current = 120; // ~2 seconds at 60fps
+        }
       }
     };
 
     loadSplat();
-  }, [fileToLoad]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [splatToLoad]);
 
   // Apply transformations to splat mesh
   useEffect(() => {
@@ -593,8 +608,8 @@ function Viewport({ fileToLoad, transform, showGrid, resetCameraTrigger, movemen
     <div className="w-full h-full">
       <div ref={containerRef} className="w-full h-full" />
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-sm z-10">
-          <div className="text-gray-900 text-xl font-medium">Loading splat...</div>
+        <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm z-10">
+          <div className="text-foreground text-xl font-medium">Loading {splatToLoad?.name ?? 'splat'}...</div>
         </div>
       )}
     </div>
